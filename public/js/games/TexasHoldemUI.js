@@ -180,22 +180,21 @@ class TexasHoldemUI extends BaseGameUI {
     const myIdx = ps.mySeatIndex;
     const seats = ps.seats || pub.seats || [];
 
-    // Order seats: opponents first, then me at the end
-    const displayOrder = [];
-    for (let i = 0; i < seats.length; i++) {
-      if (i !== myIdx) displayOrder.push(i);
-    }
-    displayOrder.push(myIdx); // My seat last
+    const sdChoices = ps.showdownChoices || {};
+    const sdWinners = ps.showdownPhase && ps.results?.winners ? new Set(ps.results.winners.map(w => w.playerId)) : new Set();
 
-    container.innerHTML = displayOrder.map(i => {
-      const s = seats[i];
+    container.innerHTML = seats.map((s, i) => {
       const isMe = i === myIdx;
       const isCurrent = i === pub.currentPlayerIndex;
       const isDealer = s.isDealer;
       const isSB = s.isSmallBlind;
       const isBB = s.isBigBlind;
+      const isSdWinner = sdWinners.has(s.playerId);
+      const choseShow = sdChoices[s.playerId] === 'show';
+      const revealHand = (pub.handOver && !s.folded) || isMe || isSdWinner || choseShow;
 
-      let cls = 'seat';
+      let cls = 'player-row';
+      if (isMe) cls += ' is-me';
       if (isCurrent && !pub.handOver) cls += ' active-turn';
       if (s.folded) cls += ' folded';
 
@@ -204,42 +203,35 @@ class TexasHoldemUI extends BaseGameUI {
       if (isSB) roleTags.push('<span class="seat-role" style="background:#3498db;color:#fff">SB</span>');
       if (isBB) roleTags.push('<span class="seat-role" style="background:#e74c3c;color:#fff">BB</span>');
 
-      // Show hand cards: showdown winner auto-shown, per-player choice, or me
-      const sdChoices = ps.showdownChoices || {};
-      const sdWinners = ps.showdownPhase && ps.results?.winners ? new Set(ps.results.winners.map(w => w.playerId)) : new Set();
-      const isSdWinner = sdWinners.has(s.playerId);
-      const choseShow = sdChoices[s.playerId] === 'show';
-      const revealHand = (pub.handOver && !s.folded) || isMe || isSdWinner || choseShow;
-
       let cardsHtml = '';
       if (revealHand) {
         const handCards = isMe ? (ps.hand || []) : (s.hand || []);
         if (handCards.length > 0) {
-          cardsHtml = '<div class="seat-cards">' +
-            handCards.map(c => {
-              const cardEl = CardRenderer.createCard(c, { small: true });
-              return cardEl.outerHTML;
-            }).join('') +
+          cardsHtml = '<div class="player-cards">' +
+            handCards.map(c => CardRenderer.createCard(c, { small: true }).outerHTML).join('') +
             '</div>';
         }
       } else if (!isMe && s.cardCount > 0) {
-        cardsHtml = '<div class="seat-cards">' +
+        cardsHtml = '<div class="player-cards">' +
           Array(s.cardCount).fill(CardRenderer.createCard(null, { faceUp: false, small: true }).outerHTML).join('') +
           '</div>';
       }
 
-      const betStr = s.roundBet > 0 ? `下注: ${s.roundBet}` : '';
+      const betStr = s.roundBet > 0 ? ` 下注 ${s.roundBet}` : '';
       const wonStr = s.wonAmount > 0 && pub.handOver ? ` +${s.wonAmount}` : '';
 
       return `
         <div class="${cls}">
-          ${roleTags.join('')}
-          <div class="seat-name">${isMe ? '👤 ' : ''}${s.playerName}${wonStr}</div>
-          <div class="seat-chips">💰 ${s.chips}</div>
-          ${betStr ? `<div class="seat-bet">${betStr}</div>` : ''}
-          ${s.allIn ? '<div style="color:#e74c3c;font-size:11px;font-weight:bold">ALL IN</div>' : ''}
-          ${ps.showdownChoices && ps.showdownChoices[s.playerId] ? `<div style="font-size:11px;color:${ps.showdownChoices[s.playerId]==='show'?'#2ecc71':'#e74c3c'}">${ps.showdownChoices[s.playerId]==='show'?'亮牌':'不亮'}</div>` : ''}
-          ${isSdWinner ? '<div style="font-size:11px;color:#f1c40f;font-weight:bold">赢家</div>' : ''}
+          <div class="player-info">
+            <span class="player-name">${isMe ? '👤 ' : ''}${s.playerName}</span>
+            <span class="player-chips">${s.chips}</span>
+            ${roleTags.join('')}
+            ${betStr ? `<span class="player-bet">${betStr}</span>` : ''}
+            ${s.allIn ? '<span class="player-allin">ALL IN</span>' : ''}
+            ${isSdWinner ? '<span class="player-winner">赢家</span>' : ''}
+            ${wonStr ? `<span class="player-won">${wonStr}</span>` : ''}
+            ${sdChoices[s.playerId] ? `<span class="player-sd-choice">${sdChoices[s.playerId]==='show'?'亮牌':'不亮'}</span>` : ''}
+          </div>
           ${cardsHtml}
         </div>
       `;
