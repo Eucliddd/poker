@@ -1,0 +1,400 @@
+.game-container {
+  height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.game-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.game-table {
+  flex: 1;
+  position: relative;
+  background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 100%);
+  overflow: hidden;
+}
+
+/* Cards */
+.card {
+  width: 52px;
+  height: 74px;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  background: #fff;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, margin 0.15s ease;
+  position: relative;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.card .card-rank {
+  font-size: 16px;
+  font-weight: bold;
+  color: #111;
+}
+.card .card-suit {
+  font-size: 20px;
+  line-height: 1;
+}
+.card .card-corner {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 9px;
+  font-weight: bold;
+}
+.card.selected {
+  transform: translateY(-16px);
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.35);
+  border-color: #f1c40f;
+  border-width: 2px;
+}
+.card.playable:hover {
+  transform: translateY(-4px);
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
+}
+.card.playable.selected:hover {
+  transform: translateY(-16px);
+}
+.card-back {
+  background: repeating-linear-gradient(
+    45deg,
+    #1565C0,
+    #1565C0 4px,
+    #1976D2 4px,
+    #1976D2 8px
+  );
+  border-color: #0D47A1;
+}
+.card-back .card-rank,
+.card-back .card-suit,
+.card-back .card-corner {
+  display: none;
+}
+
+/* Texas Hold'em Table */
+.texas-table {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 40px 20px;
+}
+
+/* Community cards area */
+.community-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.community-cards {
+  display: flex;
+  gap: 8px;
+  min-height: 78px;
+  align-items: center;
+}
+.community-cards .placeholder {
+  width: 52px;
+  height: 74px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 5px;
+}
+.community-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Pot */
+.pot-display {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--gold);
+  padding: 6px 16px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+
+/* Seats ring */
+.seats-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  max-width: 900px;
+  width: 100%;
+}
+.seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--radius);
+  min-width: 120px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+.seat.active-turn {
+  border-color: var(--gold);
+  animation: pulse 1.5s ease infinite;
+}
+.seat.folded .seat-name {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.seat-name {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.seat-chips {
+  font-size: 12px;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.seat-bet {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 16px;
+}
+.seat-cards {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.seat-cards .card {
+  width: 36px;
+  height: 52px;
+  font-size: 10px;
+  cursor: default;
+}
+.seat-cards .card .card-rank { font-size: 12px; }
+.seat-cards .card .card-suit { font-size: 15px; }
+.seat-cards .card .card-corner { font-size: 7px; }
+.seat-cards .card:hover { transform: none; }
+.seat-dealer {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #333;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+.seat-role {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-bottom: 2px;
+}
+
+@keyframes pulse {
+  0%, 100% { border-color: var(--gold); }
+  50% { border-color: rgba(241, 196, 15, 0.4); }
+}
+
+/* Player hand area */
+.my-hand-area {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.my-hand {
+  display: flex;
+  justify-content: center;
+}
+.my-hand .card {
+  margin-left: -16px;
+}
+.my-hand .card:first-child {
+  margin-left: 0;
+}
+.my-hand .card:hover {
+  z-index: 10;
+}
+
+/* Action bar */
+.action-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+.action-bar button {
+  min-width: 60px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Raise buttons group */
+.raise-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.raise-quick {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.raise-input {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.raise-input input {
+  width: 70px;
+  padding: 6px 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Winner announcement */
+.winner-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 24px 40px;
+  background: rgba(0,0,0,0.85);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  text-align: center;
+  z-index: 100;
+}
+.winner-overlay .winner-name {
+  font-size: 24px;
+  color: var(--gold);
+  font-weight: bold;
+}
+.winner-overlay .winner-hand {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* Timer */
+.turn-timer {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  background: rgba(0,0,0,0.5);
+}
+.turn-timer.urgent {
+  color: var(--danger);
+  animation: pulse 0.5s ease infinite;
+}
+
+/* Message area */
+.game-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  padding: 8px 20px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 20px;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+/* Card dealing animation */
+@keyframes dealCardIn {
+  0% {
+    transform: translateY(-180px) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+.card.dealing {
+  animation: dealCardIn 0.35s ease-out forwards;
+}
+
+/* Run It Twice display */
+.run-it-twice-section {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: flex-start;
+}
+.run-it-twice-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.run-it-twice-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.run-it-twice-cards {
+  display: flex;
+  gap: 4px;
+}
+.run-it-twice-cards .card {
+  width: 42px;
+  height: 60px;
+  font-size: 11px;
+}
+.run-it-twice-cards .card .card-rank { font-size: 13px; }
+.run-it-twice-cards .card .card-suit { font-size: 16px; }
+.run-it-twice-cards .card .card-corner { font-size: 8px; }
+
+/* Rebuy UI */
+.rebuy-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.rebuy-area input {
+  width: 70px;
+  padding: 6px;
+  font-size: 12px;
+  text-align: center;
+}

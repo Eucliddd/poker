@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>扑克游戏平台</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/lobby.css">
+  <link rel="stylesheet" href="/css/games.css">
+</head>
+<body>
+  <header id="top-bar">
+    <span class="logo">🃏 扑克游戏平台</span>
+    <span id="connection-status" class="status-dot disconnected"></span>
+  </header>
+
+  <!-- Lobby -->
+  <section id="page-lobby" class="page active">
+    <div class="lobby-container">
+      <nav class="game-tabs">
+        <button data-game="texas" class="tab active">德州扑克</button>
+        <button data-game="doudizhu" class="tab">斗地主</button>
+        <button data-game="guandan" class="tab">掼蛋</button>
+      </nav>
+
+      <div class="lobby-content">
+        <div class="room-list-panel">
+          <h3>房间列表</h3>
+          <div id="room-list" class="room-list"></div>
+        </div>
+        <div class="action-panel">
+          <div class="name-input">
+            <label>昵称</label>
+            <input type="text" id="player-name" maxlength="12" placeholder="输入昵称">
+          </div>
+          <div class="create-room">
+            <button id="btn-create-room" class="btn-primary">创建房间</button>
+          </div>
+          <div class="join-room">
+            <input type="text" id="room-code" placeholder="房间号" maxlength="6" style="text-transform:uppercase">
+            <button id="btn-join-room" class="btn-secondary">加入房间</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Room Lobby -->
+  <section id="page-room-lobby" class="page">
+    <div class="room-lobby-container">
+      <div class="room-header">
+        <div>
+          <span class="room-label">房间号</span>
+          <span id="room-code-display" class="room-code-big">----</span>
+        </div>
+        <div>
+          <span id="game-type-display" class="game-type-tag">德州扑克</span>
+        </div>
+      </div>
+      <div id="player-list" class="player-list"></div>
+      <div id="settings-panel" class="settings-panel hidden">
+        <div class="settings-header" id="settings-toggle">
+          <span>⚙️ 游戏设置</span>
+          <span class="settings-arrow">▼</span>
+        </div>
+        <div class="settings-body" id="settings-body">
+          <div class="settings-row">
+            <label>回合时间 (秒)</label>
+            <input type="number" id="set-turn-time" min="10" max="120" step="5">
+          </div>
+          <div class="settings-row">
+            <label>小盲注</label>
+            <input type="number" id="set-small-blind" min="1" max="1000" step="5">
+          </div>
+          <div class="settings-row">
+            <label>大盲注</label>
+            <input type="number" id="set-big-blind" min="2" max="2000" step="5">
+          </div>
+          <div class="settings-row">
+            <label>初始筹码</label>
+            <input type="number" id="set-default-chips" min="100" max="50000" step="100">
+          </div>
+          <div class="settings-row toggle-row">
+            <label>Run It Twice (发两次)</label>
+            <input type="checkbox" id="set-run-it-twice">
+          </div>
+          <div class="settings-row toggle-row">
+            <label>补筹码</label>
+            <input type="checkbox" id="set-rebuy-enabled">
+          </div>
+          <div class="settings-row">
+            <label>补筹码下限</label>
+            <input type="number" id="set-rebuy-min" min="50" max="5000" step="50">
+          </div>
+          <div class="settings-row">
+            <label>补筹码上限</label>
+            <input type="number" id="set-rebuy-max" min="100" max="10000" step="50">
+          </div>
+        </div>
+      </div>
+      <div class="room-actions">
+        <button id="btn-ready" class="btn-primary">准备</button>
+        <button id="btn-start-game" class="btn-success hidden">开始游戏</button>
+        <button id="btn-leave-room" class="btn-danger">离开</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Game Table -->
+  <section id="page-game" class="page">
+    <div class="game-container">
+      <div class="game-top-bar">
+        <span id="game-room-code"></span>
+        <span id="game-type-label"></span>
+        <button id="btn-game-leave" class="btn-danger btn-sm">离开</button>
+      </div>
+      <div id="game-table" class="game-table"></div>
+    </div>
+  </section>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/lobby.js"></script>
+  <script src="/js/card-renderer.js"></script>
+  <script src="/js/games/BaseGameUI.js"></script>
+  <script src="/js/games/TexasHoldemUI.js"></script>
+  <script src="/js/games/DouDiZhuUI.js"></script>
+  <script src="/js/games/GuanDanUI.js"></script>
+  <script>
+    SocketClient.connect();
+    Lobby.init();
+  </script>
+</body>
+</html>

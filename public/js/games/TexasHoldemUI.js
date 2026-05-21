@@ -1,0 +1,471 @@
+class TexasHoldemUI extends BaseGameUI {
+  constructor() {
+    super('texas');
+    this.phaseNames = {
+      preflop: 'Pre-flop',
+      flop: 'Flop',
+      turn: 'Turn',
+      river: 'River',
+      showdown: 'Showdown',
+    };
+    this.privateState = null;
+    this.publicState = null;
+    this.selectedAction = null;
+    this.raiseAmount = 0;
+    this.timerSeconds = 0;
+    this._handDealt = false;
+    this._lastCommCount = 0;
+  }
+
+  render() {
+    this.container.innerHTML = `
+      <div class="texas-table">
+        <div id="phase-label" class="community-label"></div>
+        <div class="community-area">
+          <div id="community-cards" class="community-cards">
+            ${Array(5).fill('<div class="placeholder"></div>').join('')}
+          </div>
+        </div>
+        <div id="pot-display" class="pot-display">底池: 0</div>
+        <div id="seats-container" class="seats-container"></div>
+        <div id="winner-area"></div>
+        <div id="my-hand-area" class="my-hand-area">
+          <div id="my-hand" class="my-hand"></div>
+          <div id="action-bar" class="action-bar"></div>
+        </div>
+        <div id="turn-timer" class="turn-timer hidden"></div>
+      </div>
+    `;
+  }
+
+  onPrivateState(state) {
+    // Detect new hand (community cards reset)
+    if (state.communityCards && state.communityCards.length === 0 && this._lastCommCount > 0) {
+      this._handDealt = false;
+      this._lastCommCount = 0;
+    }
+    this.privateState = state;
+    this._updateUI();
+  }
+
+  onPublicState(state) {
+    this.publicState = state;
+    this._updateUI();
+  }
+
+  onAction(action) {
+    const player = this._findSeatPlayer(action.playerId);
+    const name = player ? player.playerName : action.playerId;
+    if (action.isShowdown) {
+      this.showMessage(action.action === 'show' ? `${name} 亮牌` : `${name} 埋牌`);
+      if (action.handOver) this._updateUI();
+      return;
+    }
+    if (action.action === 'fold') {
+      this.showMessage(`${name} 弃牌`);
+    } else if (action.action === 'check') {
+      this.showMessage(`${name} 过牌`);
+    } else if (action.action === 'call') {
+      this.showMessage(`${name} 跟注 ${action.amount}`);
+    } else if (action.action === 'raise') {
+      this.showMessage(`${name} 加注到 ${action.totalBet}`);
+    } else if (action.action === 'all-in') {
+      this.showMessage(`${name} ALL IN! ${action.totalBet}`);
+    }
+  }
+
+  onGameEnd(result) {
+    this._updateUI();
+  }
+
+  _updateUI() {
+    if (!this.privateState || !this.publicState) return;
+
+    const ps = this.privateState;
+    const pub = this.publicState;
+
+    // Phase label
+    const phaseEl = document.getElementById('phase-label');
+    if (phaseEl) {
+      phaseEl.textContent = this.phaseNames[pub.phase] || pub.phase;
+    }
+
+    // Community cards
+    this._renderCommunityCards(ps.communityCards);
+
+    // Pot
+    const potEl = document.getElementById('pot-display');
+    if (potEl) potEl.textContent = `底池: ${this._formatChips(ps.pot || pub.pot)}`;
+
+    // Seats
+    this._renderSeats(ps, pub);
+
+    // My hand
+    this._renderMyHand(ps);
+
+    // Action bar
+    this._renderActionBar(ps);
+
+    // Timer
+    this._renderTimer(ps);
+
+    // Winner
+    this._renderWinner(ps, pub);
+  }
+
+  _renderCommunityCards(cards) {
+    const container = document.getElementById('community-cards');
+    if (!container) return;
+
+    const count = cards.length;
+    const prev = this._lastCommCount;
+
+    if (count === 0 && prev > 0) this._lastCommCount = 0;
+    const currentPrev = this._lastCommCount;
+
+    // Step 1: always render 5 placeholder divs
+    container.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+      const ph = document.createElement('div');
+      ph.className = 'placeholder';
+      container.appendChild(ph);
+    }
+
+    // Step 2: replace slots that have cards
+    for (let i = 0; i < count; i++) {
+      if (i < currentPrev) {
+        container.replaceChild(CardRenderer.createCard(cards[i]), container.children[i]);
+      } else {
+        const delay = (i - currentPrev) * 250;
+        const card = cards[i];
+        setTimeout(() => {
+          if (i < container.children.length) {
+            const el = CardRenderer.createCard(card);
+            el.classList.add('dealing');
+            container.replaceChild(el, container.children[i]);
+          }
+        }, delay);
+      }
+    }
+
+    this._lastCommCount = count;
+  }
+
+  _renderSeats(ps, pub) {
+    const container = document.getElementById('seats-container');
+    if (!container) return;
+
+    const myIdx = ps.mySeatIndex;
+    const seats = ps.seats || pub.seats || [];
+
+    // Order seats: opponents first, then me at the end
+    const displayOrder = [];
+    for (let i = 0; i < seats.length; i++) {
+      if (i !== myIdx) displayOrder.push(i);
+    }
+    displayOrder.push(myIdx); // My seat last
+
+    container.innerHTML = displayOrder.map(i => {
+      const s = seats[i];
+      const isMe = i === myIdx;
+      const isCurrent = i === pub.currentPlayerIndex;
+      const isDealer = s.isDealer;
+      const isSB = s.isSmallBlind;
+      const isBB = s.isBigBlind;
+
+      let cls = 'seat';
+      if (isCurrent && !pub.handOver) cls += ' active-turn';
+      if (s.folded) cls += ' folded';
+
+      const roleTags = [];
+      if (isDealer) roleTags.push('<span class="seat-role" style="background:#f1c40f;color:#333">D</span>');
+      if (isSB) roleTags.push('<span class="seat-role" style="background:#3498db;color:#fff">SB</span>');
+      if (isBB) roleTags.push('<span class="seat-role" style="background:#e74c3c;color:#fff">BB</span>');
+
+      // Show hand cards if hand is over or this is me
+      let cardsHtml = '';
+      if ((pub.handOver && !s.folded) || isMe) {
+        const handCards = isMe ? (ps.hand || []) : (s.hand || []);
+        if (handCards.length > 0) {
+          cardsHtml = '<div class="seat-cards">' +
+            handCards.map(c => {
+              const cardEl = CardRenderer.createCard(c, { small: true });
+              return cardEl.outerHTML;
+            }).join('') +
+            '</div>';
+        }
+      } else if (!isMe && s.cardCount > 0) {
+        cardsHtml = '<div class="seat-cards">' +
+          Array(s.cardCount).fill(CardRenderer.createCard(null, { faceUp: false, small: true }).outerHTML).join('') +
+          '</div>';
+      }
+
+      const betStr = s.roundBet > 0 ? `下注: ${s.roundBet}` : '';
+      const wonStr = s.wonAmount > 0 && pub.handOver ? ` +${s.wonAmount}` : '';
+
+      return `
+        <div class="${cls}">
+          ${roleTags.join('')}
+          <div class="seat-name">${isMe ? '👤 ' : ''}${s.playerName}${wonStr}</div>
+          <div class="seat-chips">💰 ${s.chips}</div>
+          ${betStr ? `<div class="seat-bet">${betStr}</div>` : ''}
+          ${s.allIn ? '<div style="color:#e74c3c;font-size:11px;font-weight:bold">ALL IN</div>' : ''}
+          ${ps.showdownChoices && ps.showdownChoices[s.playerId] ? `<div style="font-size:11px;color:${ps.showdownChoices[s.playerId]==='show'?'#2ecc71':'#e74c3c'}">${ps.showdownChoices[s.playerId]==='show'?'亮牌':'埋牌'}</div>` : ''}
+          ${cardsHtml}
+        </div>
+      `;
+    }).join('');
+  }
+
+  _renderMyHand(ps) {
+    const container = document.getElementById('my-hand');
+    if (!container) return;
+    const hand = ps.hand || [];
+    const isFolded = ps.myFolded;
+
+    if (isFolded || hand.length === 0) {
+      container.innerHTML = '';
+      this._handDealt = false;
+      return;
+    }
+
+    // Animate on first deal of each hand
+    if (!this._handDealt && hand.length > 0) {
+      this._handDealt = true;
+      CardRenderer.dealCards(container, hand, { delay: 200, sort: true });
+    } else {
+      CardRenderer.renderHand(container, hand, { sort: true });
+    }
+  }
+
+  _renderActionBar(ps) {
+    const bar = document.getElementById('action-bar');
+    if (!bar) return;
+
+    const settings = ps.settings || {};
+
+    // Showdown phase: show/muck buttons
+    if (ps.showdownPhase && ps.isMyTurn) {
+      bar.innerHTML = `
+        <button class="btn-success action-btn" data-action="show">亮牌</button>
+        <button class="btn-danger action-btn" data-action="muck">埋牌</button>
+      `;
+      bar.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          SocketClient.emit('game:action', { action: btn.dataset.action });
+        });
+      });
+      return;
+    }
+
+    if (!ps.isMyTurn || ps.handOver) {
+      let html = '';
+      // Rebuy button area
+      if (!ps.handOver && settings.rebuyEnabled !== false) {
+        html += this._rebuyHtml(settings);
+      }
+      html += ps.handOver
+        ? '<button class="btn-gold" id="btn-next-hand">下一局</button>'
+        : '<span style="color:rgba(255,255,255,0.5);font-size:13px">等待其他玩家操作...</span>';
+      bar.innerHTML = html;
+      this._bindNextHandBtn();
+      this._bindRebuy();
+      return;
+    }
+
+    const actions = ps.validActions || [];
+    const maxBet = Math.max(...(ps.seats || []).map(s => s.roundBet), 0);
+    const toCall = maxBet - (ps.myRoundBet || 0);
+    const minRaise = maxBet + Math.max(settings.bigBlind || 20, 20);
+    const pot = ps.pot || 0;
+
+    let html = '';
+
+    if (actions.includes('fold')) {
+      html += '<button class="btn-danger action-btn" data-action="fold">弃牌</button>';
+    }
+    if (actions.includes('check')) {
+      html += '<button class="btn-secondary action-btn" data-action="check">过牌</button>';
+    }
+    if (actions.includes('call') && toCall > 0) {
+      html += `<button class="btn-primary action-btn" data-action="call">跟注 ${toCall}</button>`;
+    }
+    if (actions.includes('raise')) {
+      const halfPot = Math.max(minRaise, Math.floor(pot / 2));
+      const fullPot = Math.max(minRaise, pot);
+      html += `
+        <div class="raise-btns">
+          <button class="btn-success action-btn raise-quick" data-amount="${halfPot}">1/2池 ${halfPot}</button>
+          <button class="btn-success action-btn raise-quick" data-amount="${fullPot}">底池 ${fullPot}</button>
+          <div class="raise-input">
+            <input type="number" id="raise-custom" min="${minRaise}" max="${ps.myChips + (ps.myRoundBet || 0)}" value="${minRaise}" placeholder="${minRaise}">
+            <button class="btn-success action-btn" data-action="raise" id="btn-raise">加注 <span id="raise-amount">${minRaise}</span></button>
+          </div>
+        </div>
+      `;
+    }
+    if (actions.includes('all-in')) {
+      html += `<button class="btn-gold action-btn" data-action="all-in">All-in ${ps.myChips + (ps.myRoundBet || 0)}</button>`;
+    }
+
+    // Rebuy when low on chips
+    if (settings.rebuyEnabled !== false) {
+      html += this._rebuyHtml(settings);
+    }
+
+    bar.innerHTML = html;
+
+    // Bind quick raise buttons
+    bar.querySelectorAll('.raise-quick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        SocketClient.emit('game:action', { action: 'raise', data: { amount: parseInt(btn.dataset.amount) } });
+      });
+    });
+
+    // Bind custom raise
+    const raiseInput = document.getElementById('raise-custom');
+    if (raiseInput) {
+      const updateRaiseLabel = () => {
+        const amountEl = document.getElementById('raise-amount');
+        if (amountEl) amountEl.textContent = raiseInput.value;
+      };
+      raiseInput.addEventListener('input', updateRaiseLabel);
+      // Enter key triggers raise
+      raiseInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          SocketClient.emit('game:action', { action: 'raise', data: { amount: parseInt(raiseInput.value) } });
+        }
+      });
+    }
+
+    // Bind action buttons (fold, check, call, raise, all-in)
+    bar.querySelectorAll('.action-btn:not(.raise-quick)').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        let data = {};
+        if (action === 'raise') {
+          const input = document.getElementById('raise-custom');
+          data.amount = input ? parseInt(input.value) : 0;
+        }
+        SocketClient.emit('game:action', { action, data });
+      });
+    });
+
+    this._bindRebuy();
+  }
+
+  _rebuyHtml(settings) {
+    const min = settings.rebuyMin || 200;
+    const max = settings.rebuyMax || 2000;
+    return `
+      <div class="rebuy-area">
+        <input type="number" id="rebuy-amount" min="${min}" max="${max}" value="${min}">
+        <button class="btn-secondary" id="btn-rebuy">补筹码</button>
+      </div>
+    `;
+  }
+
+  _bindRebuy() {
+    const btn = document.getElementById('btn-rebuy');
+    if (btn && !btn._bound) {
+      btn._bound = true;
+      btn.addEventListener('click', () => {
+        const amount = parseInt(document.getElementById('rebuy-amount').value);
+        SocketClient.emit('game:rebuy', { amount });
+      });
+    }
+  }
+
+  _renderTimer(ps) {
+    const el = document.getElementById('turn-timer');
+    if (!el) return;
+
+    if (ps.isMyTurn && !ps.handOver) {
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      this.timerSeconds = ps.turnTimeLeft || 30;
+      el.classList.remove('hidden');
+      el.classList.remove('urgent');
+      el.textContent = this.timerSeconds;
+
+      this.timerInterval = setInterval(() => {
+        this.timerSeconds--;
+        el.textContent = this.timerSeconds;
+        if (this.timerSeconds <= 10) el.classList.add('urgent');
+        // Let server handle timeout via its own timer
+      }, 1000);
+    } else {
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      el.classList.add('hidden');
+    }
+  }
+
+  _renderWinner(ps, pub) {
+    const area = document.getElementById('winner-area');
+    if (!area) return;
+
+    if (!pub.handOver || !ps.results) {
+      area.innerHTML = '';
+      return;
+    }
+
+    const results = ps.results;
+    let html = '';
+
+    // Run It Twice display
+    if (results.runItTwice && results.runouts) {
+      html += '<div class="run-it-twice-section">';
+      results.runouts.forEach((runout, idx) => {
+        html += `<div class="run-it-twice-col">
+          <span class="run-it-twice-label">Run ${idx + 1}</span>
+          <div class="run-it-twice-cards">`;
+        runout.communityCards.forEach(card => {
+          html += CardRenderer.createCard(card, { small: true }).outerHTML;
+        });
+        html += '</div></div>';
+      });
+      html += '</div>';
+    }
+
+    const winners = results.winners || [];
+    if (winners.length > 0) {
+      const winnerNames = winners.map(w => {
+        const player = this._findSeatPlayer(w.playerId);
+        const name = player ? player.playerName : w.playerId;
+        const handName = w.hand ? w.hand.name : '';
+        return `<div class="winner-name">🏆 ${name} +${w.amount}</div>
+          ${handName ? `<div class="winner-hand">${handName}</div>` : ''}`;
+      }).join('');
+
+      html += `<div class="winner-overlay">${winnerNames}</div>`;
+    }
+
+    area.innerHTML = html;
+  }
+
+  _bindNextHandBtn() {
+    const btn = document.getElementById('btn-next-hand');
+    if (btn && !btn._bound) {
+      btn._bound = true;
+      btn.addEventListener('click', () => {
+        SocketClient.emit('game:start', {});
+      });
+    }
+  }
+
+  _findSeatPlayer(playerId) {
+    if (!this.privateState || !this.privateState.seats) return null;
+    return this.privateState.seats.find(s => s.playerId === playerId);
+  }
+
+  _formatChips(n) {
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return String(n);
+  }
+
+  destroy() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    super.destroy();
+  }
+}
+
+GameUIRegistry.register('texas', TexasHoldemUI);

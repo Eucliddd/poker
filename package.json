@@ -1,0 +1,21 @@
+{
+  "name": "poker-platform",
+  "version": "1.0.0",
+  "description": "Multi-game online card platform",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test test/*.test.js",
+    "test:cards": "node --test test/cards.test.js",
+    "test:patterns": "node --test test/card-patterns.test.js",
+    "test:rooms": "node --test test/room-manager.test.js",
+    "test:texas": "node --test test/texas-holdem.test.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "uuid": "^9.0.0"
+  }
+}
