@@ -65,25 +65,34 @@ class TexasHoldemUI extends BaseGameUI {
   onAction(action) {
     const player = this._findSeatPlayer(action.playerId);
     const name = player ? player.playerName : action.playerId;
+    const isMe = action.playerId === this.myPlayerId;
+
     if (action.isShowdown) {
       this.showMessage(action.action === 'show' ? `${name} 亮牌` : `${name} 埋牌`);
+      Sound[action.action === 'show' ? 'chip' : 'fold']();
       if (action.handOver) this._updateUI();
       return;
     }
     if (action.action === 'fold') {
-      this.showMessage(`${name} 弃牌`);
+      this.showMessage(`${name} 弃牌`); Sound.fold();
     } else if (action.action === 'check') {
-      this.showMessage(`${name} 过牌`);
+      this.showMessage(`${name} 过牌`); Sound.check();
     } else if (action.action === 'call') {
-      this.showMessage(`${name} 跟注 ${action.amount}`);
+      this.showMessage(`${name} 跟注 ${action.amount}`); Sound.chip();
     } else if (action.action === 'raise') {
-      this.showMessage(`${name} 加注到 ${action.totalBet}`);
+      this.showMessage(`${name} 加注到 ${action.totalBet}`); Sound.raise();
     } else if (action.action === 'all-in') {
-      this.showMessage(`${name} ALL IN! ${action.totalBet}`);
+      this.showMessage(`${name} ALL IN! ${action.totalBet}`); Sound.allin();
+    }
+
+    // My turn notification
+    if (!isMe && this.privateState && this.privateState.isMyTurn) {
+      Sound.yourTurn();
     }
   }
 
   onGameEnd(result) {
+    Sound.win();
     this._updateUI();
   }
 
@@ -155,6 +164,7 @@ class TexasHoldemUI extends BaseGameUI {
             const el = CardRenderer.createCard(card);
             el.classList.add('dealing');
             container.replaceChild(el, container.children[i]);
+            Sound.deal();
           }
         }, delay);
       }
@@ -402,7 +412,7 @@ class TexasHoldemUI extends BaseGameUI {
       this.timerInterval = setInterval(() => {
         this.timerSeconds--;
         el.textContent = this.timerSeconds;
-        if (this.timerSeconds <= 10) el.classList.add('urgent');
+        if (this.timerSeconds <= 10) { el.classList.add('urgent'); Sound.tick(); }
         // Let server handle timeout via its own timer
       }, 1000);
     } else {

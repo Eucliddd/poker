@@ -64,6 +64,16 @@ class BaseGameUI {
       Router.navigate('lobby');
     };
 
+    // Sound toggle
+    const soundBtn = document.getElementById('btn-sound-toggle');
+    if (soundBtn) {
+      Sound.init();
+      soundBtn.onclick = () => {
+        Sound.enabled = !Sound.enabled;
+        soundBtn.textContent = Sound.enabled ? '🔊' : '🔇';
+      };
+    }
+
     this.render();
 
     // Read already-received state (may have arrived before init)

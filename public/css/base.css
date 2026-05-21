@@ -125,3 +125,11 @@ input::placeholder { color: var(--text-dim); }
   from { opacity: 0; transform: translateX(50px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+@media (max-width: 768px) {
+  body { font-size: 13px; }
+  button { padding: 6px 12px; font-size: 12px; }
+  input { padding: 6px 10px; font-size: 12px; }
+  #top-bar { padding: 0 10px; height: 40px; }
+  .logo { font-size: 14px; }
+}

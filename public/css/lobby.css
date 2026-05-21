@@ -253,8 +253,19 @@
   width: auto;
 }
 
+@media (max-width: 768px) {
+  .lobby-container { padding: 10px; }
+  .room-lobby-container { padding: 10px; }
+  .game-tabs .tab { padding: 10px; font-size: 13px; }
+  .room-code-big { font-size: 24px; }
+  .room-header { flex-direction: column; gap: 8px; text-align: center; }
+}
+
 @media (max-width: 640px) {
   .lobby-content {
     grid-template-columns: 1fr;
   }
+  .room-lobby-container { max-width: 100%; }
+  .player-item { padding: 10px; }
+  .join-room input { font-size: 16px; }
 }
