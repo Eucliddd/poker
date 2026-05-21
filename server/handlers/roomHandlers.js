@@ -78,6 +78,20 @@ function registerRoomHandlers(io, socket, roomManager) {
     io.to(room.code).emit('room:update', room.toJSON());
   });
 
+  socket.on('room:shuffleSeats', (_, callback) => {
+    const playerId = roomManager.socketPlayer.get(socket.id);
+    if (!playerId) return callback && callback({ error: '不在房间中' });
+
+    const room = roomManager.getRoomByPlayer(playerId);
+    if (!room) return callback && callback({ error: '房间不存在' });
+
+    const result = room.shuffleSeats(playerId);
+    if (result.error) return callback && callback({ error: result.error });
+
+    io.to(room.code).emit('room:update', room.toJSON());
+    if (callback) callback({ success: true });
+  });
+
   socket.on('room:updateSettings', (patches, callback) => {
     const playerId = roomManager.socketPlayer.get(socket.id);
     if (!playerId) return callback && callback({ error: '不在房间中' });

@@ -43,11 +43,14 @@ class TexasHoldem extends GameSession {
       return { success: true };
     }
 
-    // First time: initialize seats
-    this.seats = players.map(p => ({
+    // Sort by lobby seatIndex, room may have been shuffled by host
+    const sorted = [...players].sort((a, b) => a.seatIndex - b.seatIndex);
+
+    this.seats = sorted.map(p => ({
       playerId: p.id,
       hand: [],
       chips: this.defaultChips,
+      totalBuyin: this.defaultChips,
       folded: false,
       allIn: false,
       roundBet: 0,
@@ -699,6 +702,24 @@ class TexasHoldem extends GameSession {
     return this.pot + pendingBets;
   }
 
+  _playerStats() {
+    return this.seats.map((s, i) => {
+      const buyin = s.totalBuyin || this.defaultChips;
+      const current = s.chips + (s.wonAmount || 0);
+      return {
+        playerId: s.playerId,
+        playerName: this.room.getPlayer(s.playerId)?.name || '',
+        buyin,
+        current,
+        net: current - buyin,
+        wonAmount: s.wonAmount || 0,
+        folded: s.folded,
+        allIn: s.allIn,
+        isOnline: this.room.getPlayer(s.playerId)?.isOnline !== false,
+      };
+    });
+  }
+
   getState(playerId) {
     const seatIdx = this._getSeatIndex(playerId);
     const seat = seatIdx !== -1 ? this.seats[seatIdx] : null;
@@ -710,6 +731,7 @@ class TexasHoldem extends GameSession {
       hand: seat ? seat.hand : [],
       mySeatIndex: seatIdx,
       myChips: seat ? seat.chips : 0,
+      myTotalBuyin: seat ? (seat.totalBuyin || this.defaultChips) : 0,
       myRoundBet: seat ? seat.roundBet : 0,
       myTotalBet: seat ? seat.totalBet : 0,
       myFolded: seat ? seat.folded : false,
@@ -744,6 +766,7 @@ class TexasHoldem extends GameSession {
       actionHistory: this.actionHistory.slice(-10),
       settings: this.settings,
       turnTimeLeft: this.getTurnTimeLeft(),
+      playerStats: this._playerStats(),
     };
   }
 
@@ -777,6 +800,7 @@ class TexasHoldem extends GameSession {
       })),
       dealerIndex: this.dealerIndex,
       settings: this.settings,
+      playerStats: this._playerStats(),
     };
   }
 
@@ -853,6 +877,7 @@ class TexasHoldem extends GameSession {
 
     const seat = this.seats[seatIdx];
     seat.chips += amount;
+    seat.totalBuyin = (seat.totalBuyin || this.defaultChips) + amount;
     return { success: true, newChips: seat.chips };
   }
 

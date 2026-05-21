@@ -34,8 +34,17 @@ class TexasHoldemUI extends BaseGameUI {
           <div id="action-bar" class="action-bar"></div>
         </div>
         <div id="turn-timer" class="turn-timer hidden"></div>
+        <button id="btn-stats-toggle" class="btn-stats-toggle">📊</button>
+        <div id="stats-panel" class="stats-panel hidden">
+          <div class="stats-title">💰 输赢记录</div>
+          <div id="stats-content"></div>
+        </div>
       </div>
     `;
+    // Bind stats toggle
+    document.getElementById('btn-stats-toggle').addEventListener('click', () => {
+      document.getElementById('stats-panel').classList.toggle('hidden');
+    });
   }
 
   onPrivateState(state) {
@@ -96,6 +105,9 @@ class TexasHoldemUI extends BaseGameUI {
     // Pot
     const potEl = document.getElementById('pot-display');
     if (potEl) potEl.textContent = `底池: ${this._formatChips(ps.pot || pub.pot)}`;
+
+    // Stats panel
+    this._renderStats(ps.playerStats || pub.playerStats || []);
 
     // Seats
     this._renderSeats(ps, pub);
@@ -455,6 +467,22 @@ class TexasHoldemUI extends BaseGameUI {
   _findSeatPlayer(playerId) {
     if (!this.privateState || !this.privateState.seats) return null;
     return this.privateState.seats.find(s => s.playerId === playerId);
+  }
+
+  _renderStats(stats) {
+    const content = document.getElementById('stats-content');
+    if (!content) return;
+    content.innerHTML = stats.map(s => {
+      const netClass = s.net >= 0 ? 'stats-profit' : 'stats-loss';
+      const netSign = s.net >= 0 ? '+' : '';
+      return `
+        <div class="stats-row">
+          <span class="stats-name">${s.playerName}${s.isOnline ? '' : ' ⚫'}</span>
+          <span class="stats-detail">带入 ${s.buyin}</span>
+          <span class="${netClass}">${netSign}${s.net}</span>
+        </div>
+      `;
+    }).join('');
   }
 
   _formatChips(n) {

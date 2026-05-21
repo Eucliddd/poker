@@ -56,6 +56,19 @@ class Room {
     return { success: true };
   }
 
+  shuffleSeats(playerId) {
+    if (playerId !== this.hostId) return { error: '只有房主可以随机座位' };
+    if (this.state !== 'waiting') return { error: '游戏已开始，无法随机座位' };
+    // Fisher-Yates shuffle
+    for (let i = this.players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.players[i], this.players[j]] = [this.players[j], this.players[i]];
+    }
+    this.players.forEach((p, i) => { p.seatIndex = i; });
+    this.lastActivity = Date.now();
+    return { success: true };
+  }
+
   get maxPlayers() {
     return config.GAMES[this.gameType].maxPlayers;
   }

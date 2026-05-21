@@ -129,6 +129,18 @@ const Lobby = (() => {
     // Settings panel (host only for texas)
     renderSettingsPanel(room, isHost);
 
+    // Shuffle seats button (host only)
+    const shuffleBtn = document.getElementById('btn-shuffle-seats');
+    if (shuffleBtn) {
+      shuffleBtn.classList.toggle('hidden', !isHost);
+      if (isHost && !shuffleBtn._bound) {
+        shuffleBtn._bound = true;
+        shuffleBtn.addEventListener('click', async () => {
+          await SocketClient.emit('room:shuffleSeats', {});
+        });
+      }
+    }
+
     // Ready button
     document.getElementById('btn-ready').onclick = async () => {
       const currentPlayer = room.players.find(p => p.id === player.id);
