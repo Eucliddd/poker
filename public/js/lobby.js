@@ -21,6 +21,7 @@ const Lobby = (() => {
       if (res.error) return;
       AppState.set('player', res.player);
       AppState.set('room', res.room);
+      SocketClient.rememberRoomSession(res.room, res.player);
       Router.navigate('room-lobby');
     });
 
@@ -35,6 +36,7 @@ const Lobby = (() => {
       if (res.error) return;
       AppState.set('player', res.player);
       AppState.set('room', res.room);
+      SocketClient.rememberRoomSession(res.room, res.player);
       Router.navigate('room-lobby');
     });
 
@@ -101,6 +103,7 @@ const Lobby = (() => {
         if (res.error) return;
         AppState.set('player', res.player);
         AppState.set('room', res.room);
+        SocketClient.rememberRoomSession(res.room, res.player);
         Router.navigate('room-lobby');
       });
     });
@@ -117,7 +120,7 @@ const Lobby = (() => {
 
     const isHost = room.isHost === true;
     document.getElementById('btn-start-game').classList.toggle('hidden', !isHost);
-    document.getElementById('btn-ready').classList.toggle('hidden', isHost);
+    document.getElementById('btn-ready').classList.remove('hidden');
 
     // Player list
     const listEl = document.getElementById('player-list');
@@ -161,6 +164,7 @@ const Lobby = (() => {
       await SocketClient.emit('room:leave', {});
       AppState.set('room', null);
       AppState.set('player', null);
+      SocketClient.clearRoomSession();
       Router.navigate('lobby');
     };
   }

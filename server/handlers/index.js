@@ -22,7 +22,7 @@ function registerAllHandlers(io, roomManager) {
     });
 
     // Resume existing session (reconnect/refresh)
-    socket.on('auth:resume', ({ userId, deviceToken } = {}, callback) => {
+    socket.on('auth:resume', ({ userId, deviceToken, joinRoom = true } = {}, callback) => {
       const user = userManager.verify(userId, deviceToken);
       if (!user) {
         return callback({ reconnected: false });
@@ -31,6 +31,10 @@ function registerAllHandlers(io, roomManager) {
       // Set identity immediately - no race condition
       socket._userId = user.userId;
       socket._displayName = user.displayName;
+
+      if (!joinRoom) {
+        return callback({ authenticated: true, inRoom: false, userId: user.userId, displayName: user.displayName });
+      }
 
       // Find if user is in a room
       const room = roomManager.getRoomByUserId(userId);
