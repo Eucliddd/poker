@@ -10,7 +10,8 @@
     "test:cards": "node --test test/cards.test.js",
     "test:patterns": "node --test test/card-patterns.test.js",
     "test:rooms": "POKER_DB_PATH=/tmp/poker-test-room-$$.db bash -c 'rm -f $POKER_DB_PATH* && node --test test/room-manager.test.js'",
-    "test:texas": "POKER_DB_PATH=/tmp/poker-test-texas-$$.db bash -c 'rm -f $POKER_DB_PATH* && node --test test/texas-holdem.test.js'"
+    "test:texas": "POKER_DB_PATH=/tmp/poker-test-texas-$$.db bash -c 'rm -f $POKER_DB_PATH* && node --test test/texas-holdem.test.js'",
+    "admin": "node server/admin.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
