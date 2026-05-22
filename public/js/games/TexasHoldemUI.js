@@ -38,7 +38,7 @@ class TexasHoldemUI extends BaseGameUI {
         <div id="turn-timer" class="turn-timer hidden"></div>
         <button id="btn-stats-toggle" class="btn-stats-toggle">📊</button>
         <div id="stats-panel" class="stats-panel hidden">
-          <div class="stats-title">💰 输赢记录</div>
+          <div class="stats-title">累计战绩</div>
           <div id="stats-content"></div>
         </div>
       </div>
@@ -224,7 +224,9 @@ class TexasHoldemUI extends BaseGameUI {
       }
 
       const betStr = s.roundBet > 0 ? ` 下注 ${s.roundBet}` : '';
-      const wonStr = s.wonAmount > 0 && pub.handOver ? ` +${s.wonAmount}` : '';
+      const handNet = (s.wonAmount || 0) - (s.totalBet || 0);
+      const netStr = pub.handOver && handNet !== 0 ? `${handNet > 0 ? '+' : ''}${handNet}` : '';
+      const netClass = handNet >= 0 ? 'player-won' : 'player-lost';
 
       return `
         <div class="${cls}">
@@ -236,7 +238,7 @@ class TexasHoldemUI extends BaseGameUI {
             ${s.allIn ? '<span class="player-allin">ALL IN</span>' : ''}
           ${s.rebuyCooldown > 0 ? `<span class="player-cooldown">冷板凳 ${s.rebuyCooldown}局</span>` : ''}
             ${isSdWinner ? '<span class="player-winner">赢家</span>' : ''}
-            ${wonStr ? `<span class="player-won">${wonStr}</span>` : ''}
+            ${netStr ? `<span class="${netClass}">${netStr}</span>` : ''}
             ${sdChoices[s.playerId] ? `<span class="player-sd-choice">${sdChoices[s.playerId]==='show'?'亮牌':'不亮'}</span>` : ''}
           </div>
           ${cardsHtml}
@@ -492,7 +494,7 @@ class TexasHoldemUI extends BaseGameUI {
           return `<div class="winner-name" style="color:#e74c3c">${playerName} ${netText}</div>`;
         }
       }).join('');
-      html += `<div class="winner-overlay">${lines}</div>`;
+      html += `<div class="winner-overlay"><div class="winner-hand">本局净输赢</div>${lines}</div>`;
     }
 
     area.innerHTML = html;

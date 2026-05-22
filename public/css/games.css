@@ -177,6 +177,7 @@
 .player-cooldown { font-size: 10px; color: #f39c12; font-weight: bold; }
 .player-winner { font-size: 10px; color: #f1c40f; font-weight: bold; }
 .player-won { font-size: 10px; color: #2ecc71; }
+.player-lost { font-size: 10px; color: #e74c3c; }
 .player-sd-choice { font-size: 10px; }
 
 .player-cards {
